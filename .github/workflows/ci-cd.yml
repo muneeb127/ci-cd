@@ -1,0 +1,57 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js for backend
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Run backend tests
+        working-directory: ./server
+        run: npm install && npm test
+
+      - name: Setup Node.js for frontend
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Run frontend tests
+        working-directory: ./client
+        run: npm install && npm test
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
+          tags: itsmuneeb127/backend:latest
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: true
+          tags: itsmuneeb127/frontend:latest
